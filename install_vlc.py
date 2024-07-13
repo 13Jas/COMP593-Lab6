@@ -1,3 +1,8 @@
+import requests
+import hashlib
+import subprocess
+import os
+
 def main():
 
     # Get the expected SHA-256 hash value of the VLC installer
@@ -29,7 +34,20 @@ def get_expected_sha256():
     # TODO: Step 1
     # Hint: See example code in lab instructions entitled "Extracting Text from a Response Message Body"
     # Hint: Use str class methods, str slicing, and/or regex to extract the expected SHA-256 value from the text 
-    return 
+    hash_url = 'http://download.videolan.org/pub/videolan/vlc/3.0.17.4/win64/SHA256SUMS'
+    resp_msg = requests.get(hash_url)
+
+    if resp_msg.status_code == requests.codes.ok:
+        hash_content = resp_msg.text
+        expected_sha256 = extract_hash_value(hash_content)
+        return expected_sha256
+    
+def extract_hash_value(hash_content):
+    lines = hash_content.split('\n')
+    for line in lines:
+     if line.endswith('vlc-3.0.17.4-win64.exe'):
+      return line.split(' ')[0]
+    
 
 def download_installer():
     """Downloads, but does not save, the .exe VLC installer file for 64-bit Windows.
@@ -39,7 +57,13 @@ def download_installer():
     """
     # TODO: Step 2
     # Hint: See example code in lab instructions entitled "Downloading a Binary File"
-    return
+    installer_url = 'http://download.videolan.org/pub/videolan/vlc/3.0.17.4/win64/vlc-3.0.17.4-win64.exe'
+    resp_msg = requests.get(installer_url)
+    
+    if resp_msg.status_code == requests.codes.ok:
+        installer_data = resp_msg.content
+        
+        return installer_data
 
 def installer_ok(installer_data, expected_sha256):
     """Verifies the integrity of the downloaded VLC installer file by calculating its SHA-256 hash value 
@@ -54,7 +78,9 @@ def installer_ok(installer_data, expected_sha256):
     """    
     # TODO: Step 3
     # Hint: See example code in lab instructions entitled "Computing the Hash Value of a Response Message Body"
-    return
+    computed_sha256 = hashlib.sha256(installer_data).hexdigest()
+
+    return computed_sha256 == expected_sha256
 
 def save_installer(installer_data):
     """Saves the VLC installer to a local directory.
@@ -67,7 +93,10 @@ def save_installer(installer_data):
     """
     # TODO: Step 4
     # Hint: See example code in lab instructions entitled "Downloading a Binary File"
-    return
+    installer_path = os.path.join(os.getenv('TEMP'), 'vlc-3.0.17.4-win64.exe')
+    with open(installer_path, 'wb') as file:
+        file.write(installer_data)
+    return installer_path
 
 def run_installer(installer_path):
     """Silently runs the VLC installer.
@@ -77,6 +106,8 @@ def run_installer(installer_path):
     """    
     # TODO: Step 5
     # Hint: See example code in lab instructions entitled "Running the VLC Installer"
+    subprocess.run([installer_path, '/L=1033', '/S'])
+    os.remove(installer_path)
     return
     
 def delete_installer(installer_path):
@@ -87,6 +118,7 @@ def delete_installer(installer_path):
     Args:
         installer_path (str): Full path of the VLC installer file
     """
+    os.remove(installer_path)
     return
 
 if __name__ == '__main__':
